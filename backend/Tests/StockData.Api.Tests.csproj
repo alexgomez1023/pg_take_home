@@ -5,7 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\backend\StockData.Api.csproj" />
+    <ProjectReference Include="..\API\StockData.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

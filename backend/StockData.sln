@@ -5,11 +5,11 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockData.Api", "backend\StockData.Api.csproj", "{6E5B9FAC-D578-48A4-92CA-DE87B089BA79}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockData.Api", "API\StockData.Api.csproj", "{6E5B9FAC-D578-48A4-92CA-DE87B089BA79}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend.Tests", "backend.Tests", "{C0C6E044-CB20-653A-D6C2-4CA8FE87111B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockData.Api.Tests", "backend.Tests\StockData.Api.Tests.csproj", "{B9907C03-DEA3-42D1-B308-6ED10C97841A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockData.Api.Tests", "Tests\StockData.Api.Tests.csproj", "{B9907C03-DEA3-42D1-B308-6ED10C97841A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

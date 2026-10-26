@@ -59,9 +59,9 @@ Yahoo's chart API is unofficial and undocumented.
 | # | Ambiguity | Assumption |
 |---|---|---|
 | 23 | Which backend: .NET or Node | **.NET 8**, which meets ".NET 8+". .NET 8 support ends on 2026-11-10. The target framework is set in one place (`Directory.Build.props`), so upgrading to .NET 10 LTS is a one-line change. |
-| 24 | Solution structure | One API project in `backend/`, organized into technical folders (`Controllers/`, `Services/`, `Clients/`, `Models/`). One test project sits next to it in `backend.Tests/`. The solution file and shared build settings are at the repo root. This is the simplest layout to navigate for an MVP. Dependencies point inward through interfaces such as `IMarketDataClient`, so the code can be split into separate projects later without changing its design. |
+| 24 | Solution structure | The repo root has just `backend/` and `frontend/`. `backend/` holds the solution file, the shared build settings, one API project in `API/` (organized into technical folders: `Controllers/`, `Services/`, `Clients/`, `Models/`) and one test project in `Tests/`. This is the simplest layout to navigate for an MVP. Dependencies point inward through interfaces such as `IMarketDataClient`, so the code can be split into separate projects later without changing its design. |
 | 25 | Endpoint shape | `GET /api/stocks/{symbol}/intraday`, built with controllers. Responses: 200 with the array, 400 for an invalid symbol format, 404 for an unknown symbol, 502 when the provider rejects our request or returns unusable data, and 503 when the provider is unreachable. Every error is an RFC 7807 `ProblemDetails`, and upstream details are never included. OpenAPI/Swagger and a `/health` endpoint are included. |
-| 26 | Frontend framework | React + **JavaScript** + Vite. Local development uses the Vite dev proxy, and CORS is configured for the frontend origin. |
+| 26 | Frontend framework | React + **JavaScript** + Vite, with Recharts for the charts. The API URL comes from `VITE_API_BASE_URL`. When it is empty (the default), requests go to the same origin and the Vite dev proxy forwards `/api` to the backend, so local development needs no CORS. Serving the frontend from a different origin requires CORS on the API, which is not configured yet. |
 | 27 | Authentication | None, since this is a public read-only MVP. |
 | 28 | What "self-hosted" means | It runs locally with `dotnet run` and `npm run dev`. A `docker-compose.yml` is an optional extra. |
 
@@ -69,7 +69,7 @@ Yahoo's chart API is unofficial and undocumented.
 
 | # | Ambiguity | Assumption |
 |---|---|---|
-| 29 | Table, chart or both | Both. The chart shows the high and low averages as lines and volume as bars. The table formats volume with thousands separators. |
+| 29 | Table, chart or both | Both. Price and volume are **two separate charts**, never one chart with two y-axes: volume is in the tens of millions and prices are in the hundreds, so two scales on one plot would suggest correlations that aren't there. The price chart shows the high and low averages as lines, and the volume chart shows bars. The table lists every value (prices to 4 decimals, volume with thousands separators), so nothing depends on hovering or reading colors. |
 | 30 | Date rendering | Dates such as `"2026-10-01"` are treated as plain text and never passed to `new Date()`. JavaScript parses that format as UTC, so browsers in US timezones would show the previous day. |
 | 31 | Error states | Separate messages for invalid input, unknown symbol, service unavailable and network failure. Loading, empty and retry states are also handled. |
 | 32 | Shareable state | The symbol goes in the URL (`?symbol=TSLA`), so it survives a refresh and can be linked. |

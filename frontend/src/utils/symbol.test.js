@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isValidSymbol, normalizeSymbol } from './symbol.js'
+import { SYMBOL_HINT, SYMBOL_REQUIRED, isValidSymbol, normalizeSymbol, validateSymbolInput } from './symbol.js'
 
 describe('normalizeSymbol', () => {
   it('trims and uppercases', () => {
@@ -18,5 +18,19 @@ describe('isValidSymbol', () => {
 
   it.each(['', 'TS LA', '$TSLA', '-TSLA', 'TS^LA', 'ABCDEFGHIJKLMNOP', 'tsla'])('rejects "%s"', (symbol) => {
     expect(isValidSymbol(symbol)).toBe(false)
+  })
+})
+
+describe('validateSymbolInput', () => {
+  it('returns the normalized symbol when valid', () => {
+    expect(validateSymbolInput(' brk-b ')).toEqual({ symbol: 'BRK-B', error: null })
+  })
+
+  it('asks for a symbol when empty', () => {
+    expect(validateSymbolInput('   ').error).toBe(SYMBOL_REQUIRED)
+  })
+
+  it('explains the format when invalid', () => {
+    expect(validateSymbolInput('$TSLA').error).toBe(SYMBOL_HINT)
   })
 })

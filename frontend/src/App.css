@@ -50,7 +50,7 @@
   color: var(--text-muted);
 }
 
-.symbol-form input[aria-invalid='true'] {
+.symbol-form input[aria-invalid="true"] {
   border-color: var(--critical);
 }
 
@@ -92,8 +92,8 @@ button {
 
 input:focus-visible,
 button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  border: 2px solid var(--accent);
+  outline: none;
 }
 
 /* Status panels (idle, loading, empty, error) */
@@ -187,14 +187,6 @@ button:focus-visible {
   margin-bottom: 24px;
 }
 
-/* Same total height as the two chart cards, so the page doesn't jump when the chart code arrives. */
-.chart-placeholder {
-  height: 610px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
 .chart-card {
   margin: 0;
   padding: 16px 8px 8px 0;
@@ -210,6 +202,18 @@ button:focus-visible {
   align-items: baseline;
   justify-content: space-between;
   padding: 0 8px 8px 16px;
+}
+
+/* Shown inside the plot area when a chart fails, so the card keeps its size. */
+.chart-card__message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+  padding: 0 16px;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 .chart-card__header h3 {
@@ -292,6 +296,7 @@ button:focus-visible {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9375rem;
+  outline: none;
 }
 
 .summary-table caption {

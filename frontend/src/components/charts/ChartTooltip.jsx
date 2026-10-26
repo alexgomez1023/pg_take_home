@@ -1,4 +1,4 @@
-import { formatLongDay } from '../utils/format.js'
+import { formatLongDay } from '../../utils/format.js'
 
 /**
  * Tooltip for both charts. Values are the strong element and series names are secondary,

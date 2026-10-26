@@ -1,24 +1,20 @@
 import { useState } from 'react'
-import { SYMBOL_HINT, isValidSymbol, normalizeSymbol } from '../utils/symbol.js'
+import { validateSymbolInput } from '../utils/symbol.js'
 
 function SymbolForm({ initialSymbol = '', isLoading, onSubmit }) {
   const [value, setValue] = useState(initialSymbol)
-  const [validationError, setValidationError] = useState(null)
+  // A symbol from the URL is checked up front, so an invalid link shows the same message as typing it.
+  const [validationError, setValidationError] = useState(() =>
+    initialSymbol ? validateSymbolInput(initialSymbol).error : null,
+  )
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    const symbol = normalizeSymbol(value)
+    const { symbol, error } = validateSymbolInput(value)
 
-    if (!symbol) {
-      setValidationError('Enter a stock symbol, for example TSLA.')
-      return
-    }
-    if (!isValidSymbol(symbol)) {
-      setValidationError(SYMBOL_HINT)
-      return
-    }
+    setValidationError(error)
+    if (error) return
 
-    setValidationError(null)
     setValue(symbol)
     onSubmit(symbol)
   }

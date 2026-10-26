@@ -9,10 +9,16 @@ vi.mock('./services/stockApi.js', async (importOriginal) => ({
   getIntradaySummary: vi.fn(),
 }))
 
-// Recharts needs real layout to render, which jsdom doesn't provide. The charts are covered by the table,
-// which shows the same values.
-vi.mock('./components/PriceChart.jsx', () => ({ default: () => <div data-testid="price-chart" /> }))
-vi.mock('./components/VolumeChart.jsx', () => ({ default: () => <div data-testid="volume-chart" /> }))
+// Recharts needs real layout to render, which jsdom doesn't provide. The table shows the same values,
+// and chartConfig.test.js checks that the charts read fields the API returns.
+const charts = vi.hoisted(() => ({ priceChartThrows: false }))
+vi.mock('./components/charts/PriceChart.jsx', () => ({
+  default: () => {
+    if (charts.priceChartThrows) throw new Error('Chart failed to render')
+    return <div data-testid="price-chart" />
+  },
+}))
+vi.mock('./components/charts/VolumeChart.jsx', () => ({ default: () => <div data-testid="volume-chart" /> }))
 
 const DAYS = [
   { day: '2026-10-22', lowAverage: 379.0523, highAverage: 382.121, volume: 77371685 },
@@ -44,6 +50,8 @@ describe('App', () => {
 
   afterEach(() => {
     vi.mocked(getIntradaySummary).mockReset()
+    charts.priceChartThrows = false
+    vi.restoreAllMocks()
   })
 
   it('starts with a prompt to enter a symbol', () => {
@@ -100,7 +108,7 @@ describe('App', () => {
 
   it('shows the API message for an unknown symbol, without a retry button', async () => {
     vi.mocked(getIntradaySummary).mockRejectedValue(
-      new ApiError('not-found', "No market data was found for symbol 'NOPE'.", { status: 404 }),
+      new ApiError('not-found', { message: "No market data was found for symbol 'NOPE'.", status: 404 }),
     )
     render(<App />)
 
@@ -114,7 +122,7 @@ describe('App', () => {
 
   it('offers a retry when the provider is unavailable, and recovers', async () => {
     vi.mocked(getIntradaySummary)
-      .mockRejectedValueOnce(new ApiError('unavailable', 'The market data provider is unavailable right now.', { status: 503 }))
+      .mockRejectedValueOnce(new ApiError('unavailable', { status: 503 }))
       .mockResolvedValueOnce(DAYS)
     render(<App />)
 
@@ -150,5 +158,41 @@ describe('App', () => {
 
     expect(await screen.findByRole('table', { name: 'Daily summary for AAPL' })).toBeInTheDocument()
     expect(screen.getByLabelText('Stock symbol')).toHaveValue('AAPL')
+  })
+
+  it('shows the wait time for a rate limit, without a retry button', async () => {
+    vi.mocked(getIntradaySummary).mockRejectedValue(new ApiError('rate-limited', { status: 429, retryAfterSeconds: 30, message: 'Please wait 30 seconds.' }))
+    render(<App />)
+
+    await searchFor('TSLA')
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Too many requests')
+    expect(alert).toHaveTextContent('Please wait 30 seconds.')
+    expect(within(alert).queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
+  })
+
+  it('keeps the page and the table working when a chart fails to render', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    charts.priceChartThrows = true
+    vi.mocked(getIntradaySummary).mockResolvedValue(DAYS)
+    render(<App />)
+
+    await searchFor('TSLA')
+
+    expect(await screen.findByText(/This chart couldn.t be displayed/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Average price per day' })).toBeInTheDocument()
+    expect(screen.getByTestId('volume-chart')).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: 'Daily summary for TSLA' })).toBeInTheDocument()
+  })
+
+  it('does not call the API for an invalid symbol in the URL, and explains why', async () => {
+    window.history.replaceState(null, '', '/?symbol=%24TSLA')
+
+    render(<App />)
+
+    expect(screen.getByLabelText('Stock symbol')).toHaveValue('$TSLA')
+    expect(screen.getByRole('alert')).toHaveTextContent("Use 1–15 letters, digits, '.', '-' or '='")
+    expect(getIntradaySummary).not.toHaveBeenCalled()
   })
 })

@@ -224,6 +224,109 @@ This is a log of the AI prompts used during this assessment. Each entry includes
   - losing the fixed 4-decimal scale (1)
 - **Not yet addressed:** duplicate timestamps, sub-cent prices and negative prices still need a decision before they can be tested.
 
+---
+
+## Phase 6: Frontend
+
+### 10. Stock summary page
+
+**Prompt:**
+
+> Build a React + Javascript page that lets the user enter a stock symbol, calls my API, and shows the results in a table and a chart. Handle loading, empty, and error states. Keep API calls in a separate service module and read the API URL from an environment variable.
+
+**Why:** The backend was finished and tested, so the next step was the UI the requirements ask for. Keeping API calls in a service module separates fetching from rendering, so the components stay simple and the error handling can be tested on its own.
+
+**Kept / Changed / Rejected:**
+
+- **Kept (structure):**
+  - `services/stockApi.js` holds every API call. It reads `VITE_API_BASE_URL` and turns HTTP failures into plain error kinds (`invalid-symbol`, `not-found`, `unavailable`, `network`, `unexpected`), so components never check status codes.
+  - A `useIntradaySummary` hook cancels the previous request when a new search starts, so a slow old response can't overwrite a newer one.
+  - Components and helpers are in technical folders, matching the backend.
+- **Kept (states):**
+  - An idle prompt, a loading spinner, and an empty state ("no trading data").
+  - Specific error messages. Retryable errors (provider down, network) get a **Try again** button; a 404 doesn't, because retrying won't help.
+  - When switching symbols, the old results stay visible but dimmed while the new ones load, so the page doesn't jump.
+- **Changed (chart design):** I asked for "a chart". The AI built **two**, price and volume, and explained why: volume is in the tens of millions and prices are in the hundreds, so one chart with two y-axes would suggest a correlation that isn't in the data. It also checked the chart colors with a colorblind-safety tool in light and dark mode instead of picking them by eye. I kept both decisions, and ASSUMPTIONS.md #29 was updated.
+- **Kept (details I hadn't asked for):**
+  - Dates are shown as calendar dates, avoiding the JavaScript bug where `new Date('2026-10-01')` displays as Sep 30 in US browsers.
+  - The symbol is saved in the URL, so a refresh or shared link shows the same data.
+  - The chart library loads only when needed, which cut the first page load from 179 kB to 72 kB gzipped.
+- **Verified:**
+  - 41 frontend tests covering every API error mapping, every page state, symbol rules and date formatting.
+  - The AI also ran the real backend and frontend together and screenshotted the page in light mode, dark mode, at 500 px wide, and for an unknown symbol, then checked the layout in those screenshots.
+- **Deferred:** CORS on the API. It isn't needed locally because the Vite dev proxy forwards `/api`, but it will be needed if the frontend is served from a different origin (ASSUMPTIONS.md #26).
+
+### 11. Frontend review
+
+**Prompt:**
+
+> Review this React code for accessibility, error handling, and maintainability. What would break first as features are added?
+
+**Why:** As with the backend (entry 7), I wanted the AI-written frontend reviewed critically before building on it. I asked "what breaks first" so the review would focus on real risks rather than a long list of nitpicks.
+
+**Kept / Changed / Rejected:**
+
+- **Kept (findings):** the AI checked Recharts' defaults in `node_modules` and computed color contrast ratios before making claims. Its main findings were:
+  - **429 handling:** once the backend adds rate limiting, a 429 would show "Something went wrong" with a **Try again** button, which encourages users to hammer the API.
+  - **No protection against a backend response change:** a renamed field would show `NaN`, and a changed date format would crash the whole page, because there was no error boundary.
+  - **No error boundary**, so a chart file failing to load after a redeploy would blank the page.
+  - **A hard-coded 610px placeholder height** and duplicated setup in the two chart components.
+- **Rejected:** reverting my focus/border CSS change. The review flagged that a border in the button's own color makes keyboard focus hard to see on the **Show data** button. I chose to keep my styling.
+- **Deferred:** the other accessibility items (moving focus after a load, a screen-reader announcement when data arrives, chart names) and moving to URL-driven state with TanStack Query.
+
+### 12. Error handling and maintainability fixes
+
+**Prompt:**
+
+> Lets deal with the error handling and maintanbility. I want to leave the input/button border css changes please
+
+**Why:** I wanted the findings from entry 11 that could actually break the app fixed, without the AI touching the styling I'd chosen.
+
+**Kept / Changed / Rejected:**
+
+- **Kept (error handling):**
+  - One table in `stockApi.js` holds every error kind's title, message and retry rule.
+  - New handling for 429 (shows the `Retry-After` wait, no retry button), 504, and a 15-second request timeout.
+  - `parseDailySummaries` validates every item in the response.
+  - Error boundaries around each chart and around the whole app.
+  - An invalid `?symbol=` in the URL gets the same check as the form.
+- **Kept (maintainability):**
+  - `chartConfig.js` holds each chart's title, height and series, so the loading and error fallbacks match the chart's size exactly. The 610px value is gone.
+  - A shared `ChartCard` component.
+  - The chart files moved to `components/charts/` with `git mv`.
+  - `Results` and `useSymbolParam` moved out of `App.jsx`.
+  - A test checks that the charts read fields the API returns.
+- **Verified:**
+  - 65 tests pass.
+  - Removing the chart error boundary failed the crash test, and removing the 429 mapping failed 3 tests.
+  - A screenshot showed the page unchanged.
+  - My CSS was confirmed untouched.
+
+### 13. README
+
+**Prompt:**
+
+> Draft a README so a reviewer on Windows or Mac can build and run the backend and frontend from a fresh clone. Then point out any step that might fail.
+
+**Why:** Reviewers need to run the project without help, so I wanted the setup steps tested, not just written.
+
+**Kept / Changed / Rejected:**
+
+- **Kept:** the README, with prerequisites, a quick start, commands, the endpoint's status codes, the project structure and a troubleshooting table.
+- **Verified:** the AI copied the files git would include into an empty folder and ran every step there. Build, all tests, `npm ci`, lint and build passed, and both apps ran with real data.
+- **Changed (bugs found by checking the README):**
+  - Settings in `frontend/.env.local` were ignored, because `vite.config.js` read `process.env` instead of using `loadEnv`.
+  - `npm run preview` didn't proxy `/api` to the API.
+
+  Both were fixed and re-tested.
+
+- **Kept (risk list):**
+  - A reviewer with only a .NET 9/10 SDK has no .NET 8 runtime.
+  - PowerShell's default script policy blocks `npm.ps1` on fresh Windows installs.
+  - Node versions older than 22.12 can't run the tests.
+  - Yahoo may be blocked or rate-limiting on some networks.
+  - macOS was not tested directly.
+
 ## Manual changes & reasoning
 
-I moved the backend and backend.Tests to a combined folder for readability and modularity.
+I moved the backend and backend.Tests to a combined folder for readability and modularity. I also tweaked some css styles for borders and spacing for better UI. Most of the implmentation was a back and forth effort with claude, where I would describe a feature and would review and change the code.

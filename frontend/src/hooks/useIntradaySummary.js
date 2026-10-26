@@ -30,7 +30,7 @@ export function useIntradaySummary() {
         status: 'error',
         requestedSymbol: symbol,
         data: null,
-        error: error instanceof ApiError ? error : new ApiError('unexpected', 'Something went wrong. Please try again.', { cause: error }),
+        error: error instanceof ApiError ? error : new ApiError('unexpected', { cause: error }),
       })
     }
   }, [])
