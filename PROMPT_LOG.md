@@ -226,4 +226,4 @@ This is a log of the AI prompts used during this assessment. Each entry includes
 
 ## Manual changes & reasoning
 
-None so far. Every change up to this point was prompted through the AI.
+I moved the backend and backend.Tests to a combined folder for readability and modularity.
