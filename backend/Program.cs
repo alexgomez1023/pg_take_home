@@ -1,6 +1,12 @@
+using StockData.Api.Clients.Yahoo;
+using StockData.Api.Filters;
+using StockData.Api.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<MarketDataExceptionFilter>());
+builder.Services.AddYahooFinanceClient();
+builder.Services.AddSingleton<IDailySummaryCalculator, DailySummaryCalculator>();
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
